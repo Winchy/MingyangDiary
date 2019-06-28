@@ -79,3 +79,38 @@ Node.js启动时，先初始化event loop，处理输入，规划timer，调用`
 
 `close`事件会在该阶段由`process.nextTick()`或socket及句柄（handle）的关闭触发。
 
+---
+
+## 问题：
+
+以下脚本的输出
+
+``` javascript
+
+    setTimeout(() => {
+        console.log(2);
+    }, 0);
+
+    let promise = new Promise((resolve, reject) => {
+        resolve(1);
+    });
+
+
+    promise.then(ret => console.log(ret));
+
+```
+
+结果：
+
+    1
+    2
+
+原因：
+
+- `setTimeout`设置了一个阈值为0的定时器，timer阶段事件还没有超过阈值，进入下一阶段；
+
+- `new Promise()`立即完成，结果插入**poll**队列；
+
+- 进入**poll**阶段后，**poll**队列不为空，执行回调，输出`1`；
+
+- 达到定时器阈值，回到timer阶段执行定时器回调，输出`2`；
